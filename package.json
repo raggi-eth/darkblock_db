@@ -1,0 +1,29 @@
+{
+  "type": "module",
+  "name": "darkblock_db",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raggi-eth/darkblock_db.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/raggi-eth/darkblock_db/issues"
+  },
+  "homepage": "https://github.com/raggi-eth/darkblock_db#readme",
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "esm": "^3.2.25",
+    "node-fetch": "^3.3.0",
+    "pg": "^8.9.0"
+  },
+  "devDependencies": {
+    "@babel/register": "^7.18.9"
+  }
+}
