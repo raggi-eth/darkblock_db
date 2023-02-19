@@ -1,0 +1,36 @@
+#postgresql commands
+
+# count rows
+SELECT COUNT(*) FROM transactions;
+
+# delete database
+DROP DATABASE darkblock;
+
+# create database
+CREATE DATABASE darkblock;
+
+# create user
+CREATE USER 'darkblock'@'localhost' IDENTIFIED BY 'darkblock';
+
+# grant privileges
+GRANT ALL PRIVILEGES ON darkblock.* TO 'darkblock'@'localhost';
+
+# flush privileges
+FLUSH PRIVILEGES;
+
+# exit
+
+# start postgresql
+sudo service postgresql start
+
+# stop postgresql
+sudo service postgresql stop
+
+# restart postgresql
+sudo service postgresql restart
+
+# query postgresql find all keys target in transactions.data
+SELECT * FROM transactions WHERE data LIKE '%target%';
+
+# query postgresql find all keys target in transactions.data
+SELECT data->>'Target' FROM transactions WHERE jsonb_exists(data, 'Target');
