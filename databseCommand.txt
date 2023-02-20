@@ -1,13 +1,13 @@
 #postgresql commands
 
-# count rows
-SELECT COUNT(*) FROM transactions;
-
-# delete database
-DROP DATABASE darkblock;
+# connect to postgresql
+psql -U postgres
 
 # create database
 CREATE DATABASE darkblock;
+
+# delete database
+DROP DATABASE darkblock;
 
 # create user
 CREATE USER 'darkblock'@'localhost' IDENTIFIED BY 'darkblock';
@@ -17,8 +17,6 @@ GRANT ALL PRIVILEGES ON darkblock.* TO 'darkblock'@'localhost';
 
 # flush privileges
 FLUSH PRIVILEGES;
-
-# exit
 
 # start postgresql
 sudo service postgresql start
@@ -34,3 +32,9 @@ SELECT * FROM transactions WHERE data LIKE '%target%';
 
 # query postgresql find all keys target in transactions.data
 SELECT data->>'Target' FROM transactions WHERE jsonb_exists(data, 'Target');
+
+# count rows
+SELECT COUNT(*) FROM transactions;
+
+# exit
+\q

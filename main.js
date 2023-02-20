@@ -7,7 +7,6 @@ dotenv.config();
 const { Client } = pg;
 // get the password from the environment variable
 const postgresPassword = process.env.POSTGRES_PASSWORD;
-console.log("postgres password: " + postgresPassword);
 const arweaveEndpoint = 'https://arweave.net/graphql';
 const postgresUri = `postgres://postgres:${postgresPassword}@localhost:5432/darkblock`;
 
@@ -38,43 +37,29 @@ async function main() {
 
     let hasMoreTransactions = true;
     let endCursor = '';
+    let transactionOrder = 0;
     const { rows } = await client.query(`
-    SELECT cursor
+    SELECT *
     FROM transactions
     ORDER BY transaction_order DESC
     LIMIT 1;
     `);
 
-    if (rows.length > 0 && rows[0].cursor !== undefined) {
-      endCursor = rows[0].cursor;
-    }
+      if (rows.length > 0 && rows[0].cursor !== undefined) {
+        endCursor = rows[0].cursor;
+        transactionOrder = rows[0].transaction_order;
+      }
 
-    // check if transaction order is in the databse 
-    const { rows2 } = await client.query(`
-  SELECT EXISTS (
-    SELECT 1
-    FROM information_schema.columns
-    WHERE table_name = 'transactions' AND column_name = 'transaction_order'
-  ) AS column_exists;    
-`);
 
-let transactionOrder = 0;
+    // wait for one second before starting the loop
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-if (rows2 !== undefined && rows2[0].exists) {
-  const { rows3 } = await client.query(`
-    SELECT transaction_order
-    FROM transactions
-    ORDER BY id DESC
-    LIMIT 1;
-  `);
 
-  if (rows3.length > 0 && rows3[0].transaction_order !== undefined) {
-    transactionOrder = rows3[0].transaction_order;
-  }
-}
-
-    console.log("lateset cursor in databse: " + endCursor);
     while (hasMoreTransactions) {
+      
+      transactionOrder++;
+      console.log("transaction order in database: " + transactionOrder);
+      console.log("lateset cursor in databse: " + endCursor);
       const query = `
         query {
           transactions(
@@ -135,7 +120,7 @@ if (rows2 !== undefined && rows2[0].exists) {
             transaction_order: transactionOrder,
           };
           values.push(data);
-          transactionOrder++;
+
 
           // console.log(`Adding row with values ${JSON.stringify(data)}...`);
         }
@@ -145,9 +130,9 @@ if (rows2 !== undefined && rows2[0].exists) {
             const placeholders = Array.from({ length: values.length }, (_, i) =>
               `($${i * 4 + 1}, $${i * 4 + 2}, $${i * 4 + 3}, $${i * 4 + 4})`
             ).join(', ');
-          
+
             const insertParams = values.flatMap(({ id, tags, cursor, transaction_order }) => [id, tags, cursor, transaction_order]);
-          
+
             await client.query(`
               INSERT INTO transactions (id, data, cursor, transaction_order)
               VALUES ${placeholders}
@@ -166,6 +151,7 @@ if (rows2 !== undefined && rows2[0].exists) {
           await new Promise(resolve => setTimeout(resolve, delay));
         } catch (error) {
           console.error(error);
+          throw error;
           // return;
         }
       }
@@ -192,15 +178,22 @@ async function mainWithRetries() {
       return;
     } catch (error) {
       console.error(`Attempt ${attempt} failed with error: ${error.message}`);
-      attempt++;
-      if (attempt <= maxRetries) {
+      if (shouldRetry(error) && attempt < maxRetries) {
         const delay = retryDelay * Math.pow(2, attempt - 1);
         console.log(`Retrying in ${delay / 1000} seconds...`);
         await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        console.error(`All attempts failed after ${attempt} retries.`);
+        throw error;
       }
+      attempt++;
     }
   }
-  console.error(`All attempts failed after ${maxRetries} retries.`);
+}
+
+function shouldRetry(error) {
+  // Only retry on specific types of errors
+  return error.message.includes('Network Error');
 }
 
 mainWithRetries().catch(console.log);
