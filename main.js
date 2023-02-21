@@ -50,14 +50,12 @@ async function main() {
         transactionOrder = rows[0].transaction_order;
       }
 
-
     // wait for one second before starting the loop
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-
     while (hasMoreTransactions) {
       
-      transactionOrder++;
+      
       console.log("transaction order in database: " + transactionOrder);
       console.log("lateset cursor in databse: " + endCursor);
       const query = `
@@ -92,11 +90,12 @@ async function main() {
         },
         body: JSON.stringify({ query })
       });
-
+      if (response.ok) {
       const { data, errors } = await response.json();
 
       if (errors) {
         console.error(errors);
+        throw errors;
         // return;
       }
 
@@ -104,11 +103,13 @@ async function main() {
       // console.log(transactions.edges.map(edge => edge.node.id));
 
       const { edges, pageInfo } = transactions;
-
+      
       if (edges.length > 0) {
         const values = [];
 
         for (const { cursor, node } of edges) {
+          console.log(node)
+          transactionOrder++;
           const { id, tags } = node;
           const data = {
             id,
@@ -154,9 +155,13 @@ async function main() {
           throw error;
           // return;
         }
+      } else {
+        console.log('No more transactions found. Waiting for 10 minutes before checking again.');
+        // wait 5 seconds before checking again
+        await new Promise(resolve => setTimeout(resolve, delay * 10));
       }
     }
-  } catch (error) {
+  } } catch (error) {
     console.error(error);
   } finally {
     await client.end();
